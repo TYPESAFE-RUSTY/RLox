@@ -1,14 +1,21 @@
+pub mod Object;
 use std::fmt;
 
+#[derive(Clone)]
 pub struct Token {
-    tokentype: Tokentype,
-    lexeme: String,
-    literal: Object,
-    line: usize,
+    pub tokentype: Tokentype,
+    pub lexeme: String,
+    pub literal: Object::Object,
+    pub line: usize,
 }
 
 impl Token {
-    pub fn new(tokentype: Tokentype, lexeme: String, literal: Object, line: usize) -> Token {
+    pub fn new(
+        tokentype: Tokentype,
+        lexeme: String,
+        literal: Object::Object,
+        line: usize,
+    ) -> Token {
         Token {
             tokentype,
             lexeme,
@@ -24,25 +31,7 @@ impl fmt::Display for Token {
     }
 }
 
-pub enum Object {
-    IntValue(i64),
-    FloatValue(f64),
-    StringValue(String),
-    Identifier(String),
-    Null,
-}
-
-impl fmt::Display for Object {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            _ => {
-                write!(f, "")
-            }
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Tokentype {
     // Single-character tokens.
     LeftParen,
