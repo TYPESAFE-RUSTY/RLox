@@ -1,11 +1,11 @@
-pub mod Object;
+use crate::scanner::object;
 use std::fmt;
 
 #[derive(Clone)]
 pub struct Token {
     pub tokentype: Tokentype,
     pub lexeme: String,
-    pub literal: Object::Object,
+    pub literal: object::Object,
     pub line: usize,
 }
 
@@ -13,7 +13,7 @@ impl Token {
     pub fn new(
         tokentype: Tokentype,
         lexeme: String,
-        literal: Object::Object,
+        literal: object::Object,
         line: usize,
     ) -> Token {
         Token {

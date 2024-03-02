@@ -184,7 +184,7 @@ impl fmt::Display for Object {
             //     write!(f, "{}", value)
             // }
             Object::Null => {
-                write!(f, "")
+                write!(f, "Null")
             }
             Object::False => {
                 write!(f, "False")
@@ -197,14 +197,14 @@ impl fmt::Display for Object {
 }
 
 impl Object {
-    pub fn int(&self) -> Result<i64, &str> {
+    pub fn _int(&self) -> Result<i64, &str> {
         match self {
             Object::IntValue(val) => Ok(*val),
             _ => Err("Expected int"),
         }
     }
 
-    pub fn float(&self) -> Result<f64, &str> {
+    pub fn _float(&self) -> Result<f64, &str> {
         match self {
             Object::IntValue(val) => Ok(*val as f64),
             Object::FloatValue(val) => Ok(*val),

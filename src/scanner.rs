@@ -1,5 +1,8 @@
-use crate::token::{Object::Object, Token, Tokentype};
+pub mod object;
+pub mod token;
+use object::Object;
 use std::collections::HashMap;
+use token::{Token, Tokentype};
 
 pub struct Scanner {
     source: String,
