@@ -1,24 +1,54 @@
 use core::panic;
-
-use crate::expr::Expr;
-use crate::token::{Object::Object, Token, Tokentype};
+pub mod expr;
+pub mod stmt;
+use crate::scanner::{object::Object, token::Token, token::Tokentype};
+use expr::Expr;
+use stmt::Stmt;
 
 pub struct Parser {
     current: usize,
     tokens: Vec<Token>,
+    statements: Vec<Stmt>,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Parser {
-        Parser { tokens, current: 0 }
+        Parser {
+            tokens,
+            current: 0,
+            statements: Vec::new(),
+        }
     }
 }
 
 // this impl implements grammar written in Expr.rs
 impl Parser {
-    pub fn parse(&mut self) -> Expr {
-        let expression = self.expression();
-        expression
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        while !self.is_at_end() {
+            let statement = self.statement();
+            self.statements.push(statement);
+        }
+        self.statements.clone()
+    }
+
+    fn statement(&mut self) -> Stmt {
+        if self.match_tokens(&[Tokentype::Print]) {
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Stmt {
+        let value = self.expression();
+        let _ = self.consume(Tokentype::Semicolon, "Expect ';' after value.");
+        Stmt::Print { expression: value }
+    }
+
+    fn expression_statement(&mut self) -> Stmt {
+        let expr = self.expression();
+        let _ = self.consume(Tokentype::Semicolon, "Expect ';' after expression");
+        Stmt::Expression { expression: expr }
     }
 
     fn expression(&mut self) -> Expr {

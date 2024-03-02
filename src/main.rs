@@ -1,8 +1,6 @@
-mod expr;
+mod interpreter;
 mod parser;
 mod scanner;
-mod token;
-
 use parser::Parser;
 
 use crate::scanner::*;
@@ -16,10 +14,8 @@ fn run(source: String) -> () {
     let mut scanner: Scanner = Scanner::new(source);
     let tokens: &Vec<token::Token> = scanner.scan_tokens();
     let mut parser = Parser::new(tokens.to_vec());
-    let expression = parser.parse();
-    expression.interpret();
-
-    println!("{}", expression)
+    let statements = parser.parse();
+    interpreter::interpret(statements);
 }
 
 fn run_file(path: &String) -> Result<(), String> {
