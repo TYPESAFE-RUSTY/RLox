@@ -1,9 +1,9 @@
-use crate::token::{Object, Token, Tokentype};
+use crate::token::{Object::Object, Token, Tokentype};
 use std::collections::HashMap;
 
 pub struct Scanner {
     source: String,
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: usize,
@@ -12,24 +12,24 @@ pub struct Scanner {
 
 impl Scanner {
     pub fn new(source: String) -> Self {
-        let mut map: HashMap<String, Tokentype> = HashMap::new();
-
-        map.insert(String::from("and"), Tokentype::And);
-        map.insert(String::from("class"), Tokentype::Class);
-        map.insert(String::from("else"), Tokentype::Else);
-        map.insert(String::from("false"), Tokentype::False);
-        map.insert(String::from("for"), Tokentype::For);
-        map.insert(String::from("fun"), Tokentype::Fun);
-        map.insert(String::from("if"), Tokentype::If);
-        map.insert(String::from("nil"), Tokentype::Nil);
-        map.insert(String::from("or"), Tokentype::Or);
-        map.insert(String::from("print"), Tokentype::Print);
-        map.insert(String::from("return"), Tokentype::Return);
-        map.insert(String::from("super"), Tokentype::Super);
-        map.insert(String::from("this"), Tokentype::This);
-        map.insert(String::from("true"), Tokentype::True);
-        map.insert(String::from("var"), Tokentype::Var);
-        map.insert(String::from("while"), Tokentype::While);
+        let map: HashMap<String, Tokentype> = HashMap::from([
+            (String::from("and"), Tokentype::And),
+            (String::from("class"), Tokentype::Class),
+            (String::from("else"), Tokentype::Else),
+            (String::from("false"), Tokentype::False),
+            (String::from("for"), Tokentype::For),
+            (String::from("fun"), Tokentype::Fun),
+            (String::from("if"), Tokentype::If),
+            (String::from("nil"), Tokentype::Nil),
+            (String::from("or"), Tokentype::Or),
+            (String::from("print"), Tokentype::Print),
+            (String::from("return"), Tokentype::Return),
+            (String::from("super"), Tokentype::Super),
+            (String::from("this"), Tokentype::This),
+            (String::from("true"), Tokentype::True),
+            (String::from("var"), Tokentype::Var),
+            (String::from("while"), Tokentype::While),
+        ]);
 
         Self {
             source,
@@ -84,6 +84,8 @@ impl Scanner {
                         comment.push(char);
                     }
                     println!("comment is : {}", comment)
+                } else if self.check_next_char("*") {
+                    self.multi_line_comment();
                 } else {
                     self.add_token(Tokentype::Slash)
                 }
@@ -134,7 +136,6 @@ impl Scanner {
     fn add_token(&mut self, tokentype: Tokentype) {
         let text = self.source[self.start..self.current].to_string();
         let token = Token::new(tokentype, text, Object::Null, self.line);
-        println!("adding token : {}", token);
         self.tokens.push(token);
     }
 
@@ -142,7 +143,6 @@ impl Scanner {
     fn add_token_with_literal(&mut self, tokentype: Tokentype, literal: Object) {
         let text = self.source[self.start..self.current].to_string();
         let token = Token::new(tokentype, text, literal, self.line);
-        println!("adding token : {}", token);
         self.tokens.push(token);
     }
 
@@ -205,6 +205,17 @@ impl Scanner {
         // adding token
         let value = self.source[self.start + 1..self.current - 1].to_string();
         self.add_token_with_literal(Tokentype::String, Object::StringValue(value));
+    }
+
+    fn multi_line_comment(&mut self) {
+        while self.peek() != "*" && self.peek_next() != '/' && !self.is_at_end() {
+            if self.peek() == "\n" {
+                self.line += 1;
+            }
+            self.advance();
+        }
+        self.advance(); // at last *
+        self.advance(); // consuming last /
     }
 
     // utility to find number literal

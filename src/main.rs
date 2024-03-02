@@ -1,7 +1,11 @@
+mod expr;
+mod parser;
 mod scanner;
 mod token;
-use crate::scanner::*;
 
+use parser::Parser;
+
+use crate::scanner::*;
 use std::env;
 use std::fs;
 use std::io;
@@ -9,14 +13,19 @@ use std::io::Write;
 use std::process;
 
 fn run(source: String) -> () {
-    let mut scanner = Scanner::new(source);
-    let _tokens = scanner.scan_tokens();
+    let mut scanner: Scanner = Scanner::new(source);
+    let tokens: &Vec<token::Token> = scanner.scan_tokens();
+    let mut parser = Parser::new(tokens.to_vec());
+    let expression = parser.parse();
+    expression.interpret();
+
+    println!("{}", expression)
 }
 
 fn run_file(path: &String) -> Result<(), String> {
     match fs::read_to_string(path) {
-        Err(msg) => return Err(msg.to_string()),
-        Ok(source) => return Ok(run(source)),
+        Err(msg) => Err(msg.to_string()),
+        Ok(source) => Ok(run(source)),
     }
 }
 
@@ -53,7 +62,8 @@ fn main() {
         // more arguments are provided
         println!("Usage: rlox [script]");
         process::exit(64)
-    } else if args.len() == 2 {
+    }
+    if args.len() == 2 {
         // file path is provided as first argument
         match run_file(&args[1]) {
             Ok(_) => process::exit(0),
