@@ -1,7 +1,7 @@
 use crate::scanner::object;
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Token {
     pub tokentype: Tokentype,
     pub lexeme: String,

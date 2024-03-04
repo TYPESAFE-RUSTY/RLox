@@ -1,7 +1,10 @@
 use core::panic;
 pub mod expr;
 pub mod stmt;
-use crate::scanner::{object::Object, token::Token, token::Tokentype};
+use crate::scanner::{
+    object::Object,
+    token::{Token, Tokentype},
+};
 use expr::Expr;
 use stmt::Stmt;
 
@@ -25,18 +28,77 @@ impl Parser {
 impl Parser {
     pub fn parse(&mut self) -> Vec<Stmt> {
         while !self.is_at_end() {
-            let statement = self.statement();
-            self.statements.push(statement);
+            let statement = self.declaration();
+            match statement {
+                Ok(val) => self.statements.push(val),
+                Err(msg) => {
+                    println!("{}", msg);
+                    self.synchronize();
+                }
+            }
         }
         self.statements.clone()
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, &str> {
+        if self.match_tokens(&[Tokentype::Var]) {
+            self.var_declaration()
+        } else {
+            Ok(self.statement())
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, &str> {
+        let name = self.consume(Tokentype::Identifier, "Expect variable name");
+
+        match name {
+            Ok(val) => {
+                let name = val;
+                let initalizer: Expr;
+                if self.match_tokens(&[Tokentype::Equal]) {
+                    initalizer = self.expression();
+                } else {
+                    initalizer = Expr::Literal {
+                        value: Object::Null,
+                    };
+                }
+                let _ = self.consume(
+                    Tokentype::Semicolon,
+                    "Expect ';' after variable declaration",
+                );
+                Ok(Stmt::Var { name, initalizer })
+            }
+            Err(msg) => {
+                println!("{}", msg);
+                Err("Parsing error occured")
+            }
+        }
     }
 
     fn statement(&mut self) -> Stmt {
         if self.match_tokens(&[Tokentype::Print]) {
             self.print_statement()
+        } else if self.match_tokens(&[Tokentype::LeftBrace]) {
+            Stmt::Block {
+                statements: self.block(),
+            }
         } else {
             self.expression_statement()
         }
+    }
+
+    fn block(&mut self) -> Vec<Stmt> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while !self.check(Tokentype::RightBrace) && !self.is_at_end() {
+            match self.declaration() {
+                Ok(val) => statements.push(val),
+                Err(msg) => println!("{}", msg),
+            }
+        }
+
+        let _ = self.consume(Tokentype::RightBrace, "Error : Expect '}' after block.");
+        statements
     }
 
     fn print_statement(&mut self) -> Stmt {
@@ -52,8 +114,34 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Expr {
-        let exp: Expr = self.equality();
-        exp
+        match self.assignment() {
+            Ok(val) => val,
+            Err(msg) => {
+                println!("{}", msg);
+                Expr::Literal {
+                    value: Object::Null,
+                }
+            }
+        }
+    }
+
+    fn assignment(&mut self) -> Result<Expr, &str> {
+        let expr = self.equality();
+
+        if self.match_tokens(&[Tokentype::Equal]) {
+            let _equals = self.previous();
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::Variable { name } => Ok(Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                }),
+                _ => Err("Error : Invalid assignment target."),
+            }
+        } else {
+            Ok(expr)
+        }
     }
 
     fn equality(&mut self) -> Expr {
@@ -155,6 +243,11 @@ impl Parser {
                 value: self.previous().literal,
             };
         }
+        if self.match_tokens(&[Tokentype::Identifier]) {
+            return Expr::Variable {
+                name: self.previous(),
+            };
+        }
         if self.match_tokens(&[Tokentype::LeftParen]) {
             let expr = self.expression();
             let _ = self.consume(Tokentype::RightParen, "Expect ')' after expression ");
@@ -209,14 +302,14 @@ impl Parser {
 
     fn consume(&mut self, ty: Tokentype, message: &str) -> Result<Token, &str> {
         if self.check(ty) {
-            return Ok(self.advance());
+            Ok(self.advance())
         } else {
             error(self.peek(), message);
-            return Err("some error occured check logs");
+            Err("some error occured check logs")
         }
     }
 
-    fn _synchronize(&mut self) {
+    fn synchronize(&mut self) {
         self.advance();
         while !self.is_at_end() {
             if self.previous().tokentype == Tokentype::Semicolon {

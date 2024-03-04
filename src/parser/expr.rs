@@ -1,4 +1,4 @@
-use crate::scanner::{object::Object, token::Token, token::Tokentype};
+use crate::scanner::{object::Object, token::Token};
 use std::fmt;
 
 // following enum implements store for this cfg
@@ -9,7 +9,7 @@ use std::fmt;
 // binary → expression operator expression ;
 // operator → "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/" ;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
@@ -25,6 +25,13 @@ pub enum Expr {
     Unary {
         operator: Token,
         right: Box<Expr>,
+    },
+    Variable {
+        name: Token,
+    },
+    Assign {
+        name: Token,
+        value: Box<Expr>,
     },
 }
 
@@ -48,77 +55,14 @@ impl fmt::Display for Expr {
             Expr::Unary { operator, right } => {
                 write!(f, "({} {})", operator, right)
             }
+            Expr::Variable { name } => write!(f, "(variable : {})", name),
+            Expr::Assign { name, value } => write!(f, "(Assignment : {} = {})", name, value),
         }
     }
-}
-
-// Evaluating expressions
-impl Expr {
-    pub fn _interpret(&self) {
-        let value: Object = evaluate(self);
-        println!("{}", value);
-    }
-
-    fn visit(&self) -> Object {
-        match self {
-            Expr::Literal { value } => {
-                let val = value;
-                val.clone()
-            }
-            Expr::Grouping { expression } => evaluate(&expression),
-            Expr::Unary { operator, right } => {
-                let right = evaluate(&right);
-
-                match operator.tokentype {
-                    Tokentype::Bang => {
-                        let truthy = is_truthy(&right);
-                        if truthy == Object::True {
-                            Object::False
-                        } else {
-                            Object::True
-                        }
-                    }
-                    Tokentype::Minus => match right {
-                        Object::IntValue(value) => Object::IntValue(-value),
-                        Object::FloatValue(value) => Object::FloatValue(-value),
-                        _ => Object::Null,
-                    },
-                    _ => Object::Null,
-                }
-            }
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => {
-                let left = evaluate(&left);
-                let right = evaluate(&right);
-                // matchception begins here ;) good luck understanding code
-                // changed my mind writing clean code ;)
-                match operator.tokentype {
-                    Tokentype::Minus => left - right,
-                    Tokentype::Plus => left + right,
-                    Tokentype::Slash => left / right,
-                    Tokentype::Star => left * right,
-                    Tokentype::Greater => bool(left > right),
-                    Tokentype::GreaterEqual => bool(left >= right),
-                    Tokentype::Less => bool(left < right),
-                    Tokentype::LessEqual => bool(left <= right),
-                    Tokentype::EqualEqual => bool(left == right),
-                    Tokentype::BangEqual => bool(left != right),
-                    _ => Object::Null,
-                }
-            }
-        }
-    }
-}
-
-pub fn evaluate(expr: &Expr) -> Object {
-    expr.visit()
 }
 
 // variation from lox i want int 0 ,float 0 and strlen 0 to be false and everything else to be true
-fn is_truthy(object: &Object) -> Object {
+pub fn is_truthy(object: &Object) -> Object {
     match object {
         Object::Null => Object::False,
         Object::True => Object::True,
@@ -154,7 +98,7 @@ fn _bin_operand_number(left: &Object, right: &Object) -> bool {
 }
 
 // utility to convert boolean to Object::bool
-fn bool(val: bool) -> Object {
+pub fn bool(val: bool) -> Object {
     if val {
         Object::True
     } else {
