@@ -1,6 +1,7 @@
 mod interpreter;
 mod parser;
 mod scanner;
+use interpreter::Interpreter;
 use parser::Parser;
 
 use crate::scanner::*;
@@ -10,22 +11,24 @@ use std::io;
 use std::io::Write;
 use std::process;
 
-fn run(source: String) -> () {
+fn run(source: String) -> Vec<parser::stmt::Stmt> {
     let mut scanner: Scanner = Scanner::new(source);
-    let tokens: &Vec<token::Token> = scanner.scan_tokens();
+    let tokens = scanner.scan_tokens();
     let mut parser = Parser::new(tokens.to_vec());
-    let statements = parser.parse();
-    interpreter::interpret(statements);
+    parser.parse()
 }
 
 fn run_file(path: &String) -> Result<(), String> {
+    let mut interpreter = Interpreter::new();
     match fs::read_to_string(path) {
         Err(msg) => Err(msg.to_string()),
-        Ok(source) => Ok(run(source)),
+        Ok(source) => Ok(interpreter.interpret(run(source))),
     }
 }
 
 fn run_prompt() -> () {
+    let mut interpreter = Interpreter::new();
+
     loop {
         let mut line = String::new();
         print!("> ");
@@ -40,7 +43,7 @@ fn run_prompt() -> () {
                 println!("Error : {}", msg);
             }
         };
-        run(line.trim().to_string())
+        interpreter.interpret(run(line))
     }
 }
 
