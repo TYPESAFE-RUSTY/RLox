@@ -6,6 +6,17 @@
 </p>
 
 <h2 align="center">Installation</h2>
+Go To Actions section of this page :
+
+![Go to Actions Section](./docs/installation_action.png)
+
+Click on the latest Commit under workflow runs section :
+
+![Click on the latest Commit](./docs/installation_commit_section.png)
+
+Scroll to the bottom you will find Artifacts section click on rlox this will start downloading rlox.zip now you can use rlox!
+
+![click on rlox](./docs/installation_rlox.png)
 
 
 <h2 align="center">Usage</h2>
@@ -31,6 +42,7 @@ example:
 this works in REPL mode too!:
 
 ![File Structure](./docs/usage_dynamic_scanner_repl.png)
+
 yes this is similar to [bhialang](https://github.com/DulLabs/bhai-lang) you can find the preset for this in presets folder you can also add your presets to this repository for others to use refer [contribution guidelines](CONTRIBUTING.md) to raise pr.
 
 <h2 align="center">Documentation</h2>
