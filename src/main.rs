@@ -31,7 +31,7 @@ fn run_prompt() -> () {
 
     loop {
         let mut line = String::new();
-        print!("> ");
+        print!(">>> ");
         let _ = io::stdout().flush(); //this is needed as rust stores print data to line buffer and > is not printed before the buffer is full
         match io::stdin().read_line(&mut line) {
             Ok(_) => {

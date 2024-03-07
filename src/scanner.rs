@@ -1,7 +1,7 @@
 pub mod object;
 pub mod token;
 use object::Object;
-use std::collections::HashMap;
+use std::{collections::HashMap, fs, process};
 use token::{Token, Tokentype};
 
 pub struct Scanner {
@@ -15,7 +15,7 @@ pub struct Scanner {
 
 impl Scanner {
     pub fn new(source: String) -> Self {
-        let map: HashMap<String, Tokentype> = HashMap::from([
+        let mut map: HashMap<String, Tokentype> = HashMap::from([
             (String::from("and"), Tokentype::And),
             (String::from("class"), Tokentype::Class),
             (String::from("else"), Tokentype::Else),
@@ -33,6 +33,8 @@ impl Scanner {
             (String::from("var"), Tokentype::Var),
             (String::from("while"), Tokentype::While),
         ]);
+
+        map = read_tokenfile(map);
 
         Self {
             source,
@@ -81,12 +83,12 @@ impl Scanner {
             '/' => {
                 if self.check_next_char("/") {
                     // deal with comments
-                    let mut comment = String::from("");
-                    while self.peek() != "\n" && !self.is_at_end() {
-                        let char = self.advance();
-                        comment.push(char);
-                    }
-                    println!("comment is : {}", comment)
+                    // let mut comment = String::from("");
+                    // while self.peek() != "\n" && !self.is_at_end() {
+                    //     let char = self.advance();
+                    //     comment.push(char);
+                    // }
+                    // println!("comment is : {}", comment)
                 } else if self.check_next_char("*") {
                     self.multi_line_comment();
                 } else {
@@ -269,4 +271,27 @@ pub fn is_alpha(character: char) -> bool {
 
 pub fn is_alpha_numeric(character: char) -> bool {
     is_alpha(character) || is_digit(character)
+}
+
+fn read_tokenfile(mut map: HashMap<String, Tokentype>) -> HashMap<String, Tokentype> {
+    match fs::read_to_string(".tokenfile") {
+        Ok(content) => {
+            let rules: Vec<String> = content.lines().map(|line| line.to_string()).collect();
+            for rule in rules {
+                let temp: Vec<&str> = rule.split(':').collect();
+                match map.get(temp[0].trim()) {
+                    Some(token) => {
+                        map.insert(temp[1].trim().to_string(), *token);
+                        let _ = map.remove(temp[0].trim());
+                    }
+                    None => {
+                        println!("Token specified in .tokenfile not found.");
+                        process::exit(64);
+                    }
+                };
+            }
+        }
+        Err(_) => (),
+    }
+    map
 }
