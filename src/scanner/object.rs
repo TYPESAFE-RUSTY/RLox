@@ -184,7 +184,7 @@ impl fmt::Display for Object {
             //     write!(f, "{}", value)
             // }
             Object::Null => {
-                write!(f, "Null")
+                write!(f, "Nil")
             }
             Object::False => {
                 write!(f, "False")
