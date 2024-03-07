@@ -78,12 +78,47 @@ impl Parser {
     fn statement(&mut self) -> Stmt {
         if self.match_tokens(&[Tokentype::Print]) {
             self.print_statement()
+        } else if self.match_tokens(&[Tokentype::If]) {
+            self.if_statement()
         } else if self.match_tokens(&[Tokentype::LeftBrace]) {
             Stmt::Block {
                 statements: self.block(),
             }
+        } else if self.match_tokens(&[Tokentype::While]) {
+            self.while_statement()
         } else {
             self.expression_statement()
+        }
+    }
+
+    fn while_statement(&mut self) -> Stmt {
+        let _ = self.consume(Tokentype::LeftParen, "Expect '(' after while .");
+        let condition = self.expression();
+        let _ = self.consume(Tokentype::RightParen, "Expect ')' after condition");
+
+        let body = self.statement();
+
+        Stmt::While {
+            condition,
+            body: Box::new(body),
+        }
+    }
+
+    fn if_statement(&mut self) -> Stmt {
+        let _ = self.consume(Tokentype::LeftParen, "Expect '(' after 'if' .");
+        let condition = self.expression();
+        let _ = self.consume(Tokentype::RightParen, "Expect ')' after if condition.");
+
+        let then_brach = self.statement();
+        let mut else_branch = Option::None;
+        if self.match_tokens(&[Tokentype::Else]) {
+            else_branch = Some(self.statement());
+        }
+
+        Stmt::If {
+            condition,
+            then_branch: Box::new(then_brach),
+            else_branch: Box::new(else_branch),
         }
     }
 
@@ -126,7 +161,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, &str> {
-        let expr = self.equality();
+        let expr = self.or();
 
         if self.match_tokens(&[Tokentype::Equal]) {
             let _equals = self.previous();
@@ -142,6 +177,37 @@ impl Parser {
         } else {
             Ok(expr)
         }
+    }
+
+    fn or(&mut self) -> Expr {
+        let mut expr = self.and();
+
+        while self.match_tokens(&[Tokentype::Or]) {
+            let operator = self.previous();
+            let right = self.and();
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            }
+        }
+        expr
+    }
+
+    fn and(&mut self) -> Expr {
+        let mut expr = self.equality();
+
+        while self.match_tokens(&[Tokentype::And]) {
+            let operator = self.previous();
+            let right = self.equality();
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            }
+        }
+
+        expr
     }
 
     fn equality(&mut self) -> Expr {

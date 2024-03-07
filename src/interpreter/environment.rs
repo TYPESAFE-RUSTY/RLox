@@ -23,6 +23,10 @@ impl Environment {
         }
     }
 
+    pub fn get_enclosing(&mut self) -> Option<Environment> {
+        *self.enclosing.clone()
+    }
+
     pub fn _add_enclosing(&mut self, environment: Environment) {
         self.enclosing = Box::new(Option::Some(environment));
     }
@@ -34,7 +38,6 @@ impl Environment {
     }
 
     pub fn get(&self, name: Token) -> Result<Object, &str> {
-        // println!("trying to get {}", name);
         match self.values.get(&name.lexeme) {
             Some(val) => Ok(val.clone()),
             None => match &*self.enclosing {
@@ -46,7 +49,7 @@ impl Environment {
 
     pub fn assign(&mut self, name: Token, value: &Object) -> Result<(), String> {
         if self.values.contains_key(&name.lexeme) {
-            self.values.insert(name.lexeme, value.clone());
+            *self.values.entry(name.lexeme).or_insert(Object::Null) = value.clone();
             Ok(())
         } else {
             match &mut *self.enclosing {

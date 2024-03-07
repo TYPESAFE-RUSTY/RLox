@@ -1,5 +1,7 @@
 pub mod environment;
 
+use std::process;
+
 use crate::{
     object::Object,
     parser::{
@@ -95,6 +97,27 @@ impl Interpreter {
                 };
                 value
             }
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => {
+                let left = self.evaluate_expression(*left);
+
+                if operator.tokentype == Tokentype::Or {
+                    if is_truthy(&left) == Object::True {
+                        left
+                    } else {
+                        self.evaluate_expression(*right)
+                    }
+                } else {
+                    if !(is_truthy(&left) == Object::True) {
+                        left
+                    } else {
+                        self.evaluate_expression(*right)
+                    }
+                }
+            }
         }
     }
 
@@ -126,6 +149,27 @@ impl Interpreter {
                 self.environment.define(name.lexeme, value)
             }
             Stmt::Block { statements } => self.execute_block(statements, self.environment.clone()),
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                if self.evaluate_expression(condition) == Object::True {
+                    self.execute_statement(*then_branch);
+                } else {
+                    match *else_branch {
+                        Some(statement) => {
+                            self.execute_statement(statement);
+                        }
+                        None => (),
+                    }
+                }
+            }
+            Stmt::While { condition, body } => {
+                while self.evaluate_expression(condition.clone()) == Object::True {
+                    self.execute_statement(*body.clone());
+                }
+            }
         }
     }
 
@@ -134,13 +178,18 @@ impl Interpreter {
     }
 
     fn execute_block(&mut self, statements: Vec<Stmt>, environment: Environment) {
-        let temp = environment;
-        self.environment = Environment::new_with_enclosing(temp.clone());
+        self.environment = Environment::new_with_enclosing(environment.clone());
 
         for statement in statements {
             self.execute_statement(statement);
         }
 
-        self.environment = temp;
+        match self.environment.get_enclosing() {
+            Some(environment) => self.environment = environment,
+            None => {
+                println!("Environment Lost . ");
+                process::exit(64);
+            }
+        };
     }
 }
